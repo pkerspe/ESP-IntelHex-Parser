@@ -1,0 +1,23 @@
+{
+    "name": "ESP-IntelHexParser",
+    "description": "This library is used parse the content of an Intel Hex file, the format also used to store compiled Arduino Firmware files",
+    "keywords": "esp,intel hex,firmware file,flashing",
+    "authors": {
+        "name": "Paul Kerspe",
+        "maintainer": true
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/pkerspe/ESP-IntelHex-Parser.git"
+    },
+    "version": "0.1.0",
+    "license": "Apache License",
+    "frameworks": "arduino",
+    "platforms": [
+        "espressif32"
+    ],
+    "dependencies": [],
+    "examples": [
+        "[Ee]xamples/*/*.ino"
+    ]
+}
