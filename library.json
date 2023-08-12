@@ -1,5 +1,5 @@
 {
-    "name": "ESP-IntelHexParser",
+    "name": "ESP-IntelHex-Parser",
     "description": "This library is used parse the content of an Intel Hex file, the format also used to store compiled Arduino Firmware files",
     "keywords": "esp,intel hex,firmware file,flashing",
     "authors": {
