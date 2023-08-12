@@ -72,48 +72,42 @@ Example Code for reading single records (=lines) from a HEX file with the name "
 
 String filePathInSpiffs = "/MyArduinoFirmware.hex";
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
-    
-    // Initialize SPIFFS
     if (!SPIFFS.begin(true))
     {
         Serial.println("SPIFFS Mount Failed");
         return;
     }
-
-    // check if file exists in SPIFFS
     if (!SPIFFS.exists(filePathInSpiffs))
         Serial.printf("File not found in SPIFFS: %s\n", filePathInSpiffs.c_str());
-        return;
-    }
-
-    // open file for reading
-    File file = SPIFFS.open(filePathInSpiffs, "r");
-    if (!file)
+    return;
+    File hexFile = SPIFFS.open(filePathInSpiffs, "r");
+    if (!hexFile)
     {
         Serial.println("Failed opening file for reading");
         return;
     }
 
-    // this is the relevant part for using this library
-    IntelHexParser hexParser(fileToFlash);
-    // create buffer to store the data (this must be at least as long as the expected data per record in the Intel HEX file (e.g. 16 bytes, weu just use 20 to be save here))
-    byte recordDataBufferSize = 20;
-    buffer recordDataBuffer[recordDataBufferSize];
-    
+    // Here start the relevant part for using this ESP-IntelHex-Parser library
+    IntelHexParser hexParser(&hexFile);
+    // create buffer to store the data of a record
+    const uint8_t recordDataBufferSize = 17;
+    byte recordDataBuffer[recordDataBufferSize];
+    recordDataBuffer[recordDataBufferSize - 1] = '\0';
+
     // get a parsed record as struct with the needed details and fill the buffer with the actual data:
     // NOTE: you can call getNextRecordToWrite in a loop as long as recordDetails.endOfFileReached == false
-    // in this example we only parse the first line in the HEX file
+    // in this example we only parse only the FIRST LINE in the HEX file
     _recordDetailsStruct recordDetails = hexParser.getNextRecordToWrite(recordDataBuffer, recordDataBufferSize);
 
     // at this point you can check the error code to see if an error occurred (should be 0 in case of no error) otherwise the buffer should now contain the data from this record (= a line in the hex file)
-    if(recordDetails.errorCode == 0){
-        Serial.printf("Parsed record in HEX file: address = %i, number of data bytes = %i, end of file reached = %i\n", recordDetails.address, recordDetails.dataLength, recordDetails.endOfFileReached );
+    if (recordDetails.errorCode == 0)
+    {
+        Serial.printf("Parsed record in HEX file: address = %i, number of data bytes = %i, end of file reached = %i\n", recordDetails.address, recordDetails.dataLength, recordDetails.endOfFileReached);
     }
-
-    // once you are done, close the file instance
-    file.close();
+    hexFile.close();
 }
 ```
 
