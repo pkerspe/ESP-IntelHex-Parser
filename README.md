@@ -54,3 +54,88 @@
  (4-bit data will either have to be stored in the lower or upper half of the bytes, that is, one byte holds only one addressable data item)
 
 **Checksum** (_ignored in this implementation_): two hex digits, a computed value that can be used to verify the record has no errors.
+
+## Usage examples
+
+The Intel Hex parser currently supports reading content from a File instance (e.g. a file stored in the SPIFFS of the ESP32), in the constructor provide a File instance to a file in SPIFFS 
+> [!NOTE]
+> make sure the read pointer in the file is a the beginning, so do not perform prior read operations on the file before calling the constructor of the IntelHexParser)
+
+> [!NOTE]
+> Make sure to properly initialize SPIFFS before calling the parse function in the library with a file path in SPIFFS!
+
+
+Example Code for reading single records (=lines) from a HEX file with the name "MyArduinoFirmware.hex" residing in the root folder of the SPIFFS:
+```
+#include <SPIFFS.h>
+#include <IntelHexParser.h>
+
+String filePathInSpiffs = "/MyArduinoFirmware.hex";
+
+void setup() {
+    Serial.begin(115200);
+    
+    // Initialize SPIFFS
+    if (!SPIFFS.begin(true))
+    {
+        Serial.println("SPIFFS Mount Failed");
+        return;
+    }
+
+    // check if file exists in SPIFFS
+    if (!SPIFFS.exists(filePathInSpiffs))
+        Serial.printf("File not found in SPIFFS: %s\n", filePathInSpiffs.c_str());
+        return;
+    }
+
+    // open file for reading
+    File file = SPIFFS.open(filePathInSpiffs, "r");
+    if (!file)
+    {
+        Serial.println("Failed opening file for reading");
+        return;
+    }
+
+    // this is the relevant part for using this library
+    IntelHexParser hexParser(fileToFlash);
+    // create buffer to store the data (this must be at least as long as the expected data per record in the Intel HEX file (e.g. 16 bytes, weu just use 20 to be save here))
+    byte recordDataBufferSize = 20;
+    buffer recordDataBuffer[recordDataBufferSize];
+    
+    // get a parsed record as struct with the needed details and fill the buffer with the actual data:
+    // NOTE: you can call getNextRecordToWrite in a loop as long as recordDetails.endOfFileReached == false
+    // in this example we only parse the first line in the HEX file
+    _recordDetailsStruct recordDetails = hexParser.getNextRecordToWrite(recordDataBuffer, recordDataBufferSize);
+
+    // at this point you can check the error code to see if an error occurred (should be 0 in case of no error) otherwise the buffer should now contain the data from this record (= a line in the hex file)
+    if(recordDetails.errorCode == 0){
+        Serial.printf("Parsed record in HEX file: address = %i, number of data bytes = %i, end of file reached = %i\n", recordDetails.address, recordDetails.dataLength, recordDetails.endOfFileReached );
+    }
+
+    // once you are done, close the file instance
+    file.close();
+}
+```
+
+Example Code for reading a whole page (e.g. 128 bytes) from a HEX file with the name "MyArduinoFirmware.hex" residing in the root folder of the SPIFFS (in this example all the safety checks are omitted to keep the code short, see above for details):
+```
+#include <SPIFFS.h>
+#include <IntelHexParser.h>
+
+String filePathInSpiffs = "/MyArduinoFirmware.hex";
+
+void setup() {
+    Serial.begin(115200);
+    SPIFFS.begin(true);
+    File file = SPIFFS.open(filePathInSpiffs, "r");
+
+    byte pageBufferSize = 128;
+    IntelHexParser hexParser(fileToFlash, pageBufferSize);
+    buffer pageBuffer[pageBufferSize];
+    while(hexParser.getNextPage(pageBuffer)){
+        // now do whatever you want with the extracted page data stored in the buffer
+    }
+
+    file.close();
+}
+```
